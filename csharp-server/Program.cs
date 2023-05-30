@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using csharp_server.models;
+using System;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 
 using WebSocketSharp;
@@ -160,15 +157,38 @@ namespace csharp_server
     {
         static void Main(string[] args)
         {
-            WebSocketServer server = new WebSocketServer("ws://198.251.71.3:7899");
+            XmlParameters xmlParameters = new XmlParameters();
+            string appPath = Path.GetFullPath(System.AppDomain.CurrentDomain.BaseDirectory);
+            string settingsFilePath = Path.Combine(appPath, "settings.xml");
+
+            using (XmlReader reader = XmlReader.Create(settingsFilePath))
+            {
+                while (reader.Read())
+                {
+                    if (reader.IsStartElement())
+                    {
+                        switch (reader.Name.ToString())
+                        {
+                            case "webServerIp":
+                                xmlParameters.webServerIp = reader.ReadString();
+                                break;
+                            case "webServerPort":
+                                xmlParameters.webServerPort = reader.ReadString();
+                                break;
+                        }
+                    }
+                }
+            }
+
+            WebSocketServer server = new WebSocketServer(xmlParameters.webServerIp + ":" + xmlParameters.webServerPort);
 
             server.AddWebSocketService<Echo>("/Echo");
             server.AddWebSocketService<EchoAll>("/EchoAll");
 
             server.KeepClean = false;
             server.Start();
-            Console.WriteLine("Server iniciado: ws://198.251.71.3:7899/Echo");
-            Console.WriteLine("Server iniciado: ws://198.251.71.3:7899/EchoAll");
+            Console.WriteLine("Server iniciado: " + xmlParameters.webServerIp + ":" + xmlParameters.webServerPort + "/Echo");
+            Console.WriteLine("Server iniciado: " + xmlParameters.webServerIp + ":" + xmlParameters.webServerPort + "/EchoAll");
 
             Console.ReadKey();
             //server.Stop();
